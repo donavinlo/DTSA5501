@@ -1,0 +1,38 @@
+---
+title: "Covid Data Example"
+author: "D. ODay"
+date: "7/19/2021"
+output: html_document
+---
+Make sur eto import tidyverse
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+I will start by reading in the data from the four main csv files.
+
+```{r get_jhu_data}
+## Get current Data in the four files
+#They all begin in the same way
+url_in <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/"
+
+filenames <- c("time_series_covid19_confirmed_global.csv", 
+               "time_series_covid19_deaths_global.csv",
+               "time_series_covid19_confirmed_US.csv", 
+               "time_series_covid19_deaths_US.csv"
+               )
+urls <- str_c(url_in, filenames)
+```
+
+```{r import_data, message=FALSE}
+global_cases <- read_csv(urls[1])
+global_deaths <- read_csv(urls[2])
+us_cases <- read_csv(urls[3])
+us_deaths <- read_csv(urls[4])
+````
+After looking at global_cases and global_death, I would like to tidy those 
+datasets and put each variable (date, cases, deaths) in their own column.
+Also, I don't need Lat and Long for the analysis I'm planning, so I will get
+rid of those and rename Region and State to be more R friendly
+
+4:02 of video
