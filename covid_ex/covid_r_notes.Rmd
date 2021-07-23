@@ -8,6 +8,8 @@ Make sur eto import tidyverse
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+# Packages Used
+- tidyverse
 
 I will start by reading in the data from the four main csv files.
 
@@ -29,10 +31,100 @@ global_cases <- read_csv(urls[1])
 global_deaths <- read_csv(urls[2])
 us_cases <- read_csv(urls[3])
 us_deaths <- read_csv(urls[4])
-````
+```
 After looking at global_cases and global_death, I would like to tidy those 
 datasets and put each variable (date, cases, deaths) in their own column.
 Also, I don't need Lat and Long for the analysis I'm planning, so I will get
-rid of those and rename Region and State to be more R friendly
+rid of those and rename Region and State to be more R friendly.
 
-4:02 of video
+```{r tidy_global_data}
+#takes global cases (doing the same thing to global_deaths), makes everything but Province/State, Country/Region, Lat
+# and Long into a row. The names (was the column headings) are now going to be
+# date. The values goes to cases. Select everything except Lat and Long
+global_deaths <- global_deaths %>%
+  pivot_longer( cols = - c('Province/State',
+                           'Country/Region', Lat, Long),
+                names_to = "date",
+                values_to = "cases") %>%
+  select(-c(Lat,Long))
+
+global_cases <- global_cases %>%
+  pivot_longer( cols = - c('Province/State',
+                           'Country/Region', Lat, Long),
+                names_to = "date",
+                values_to = "cases") %>%
+  select(-c(Lat,Long))
+```
+
+# Now We're going to work on transformming and tidying the data
+
+We'll start by combining the case and death per date into one variable called 'global';
+we will do this by joining the cases with the deaths and the renaming our 'country region'
+and 'Province State' to get rid of the slash. Also, need to notice that our date
+was not a date object. We will need the *lubridate* package for this.
+
+```{r tidy_join_global_data}
+global <- global_cases %>%
+  full_join(global_deaths) %>%
+  rename(Country_Region = `Country/Region`,
+         Province_State = `Province/State`) %>%
+  mutate(date = mdy(date))
+```
+
+Look at the data and see if there's any problems. We think there are a lot of 
+rows with 0. So we also want to filter those out.
+```{r tidy_global_data_summary}
+global <- global %>% filter(cases > 0)
+summary(global)
+```
+
+Looking at the summary table there are a few concerns. First we want to see if
+the maximum number of cases should really be that large. We can see the data is
+valid because there are numerous cases with this amount of data.
+```{r tidy_global_filter_maax}
+global %>% filter(cases > 28000000)
+```
+
+Now we want to take a look at the US cases. When looking at the dataset we can
+see some weird codes/data types. We want to pivot the dates, keep Admin2, Province/State,
+Country/Region and Lat/Long.. Select all the important variables.Make date a date object.
+Select all the remaining columns except Latitude and Longitude.
+```{r tidy_us_cases_data}
+us_cases <- us_cases %>%
+  pivot_longer(cols = -(UID:Combined_Key), #got rif of 
+               names_to = "date",
+               values_to = "cases") %>%
+  select(Admin2:cases) %>%
+  mutate(date = mdy(date)) %>%
+  select(-c(Lat, Long_))
+```
+
+Now we want to do the same for us_deaths. We can't always assume the two data sets
+will be in similar formats. But we are for this situation.
+```{r tidy_us_deaths_data}
+us_deaths <- us_deaths %>%
+  pivot_longer(cols = -(UID:Population), #got rif of 
+               names_to = "date",
+               values_to = "deaths") %>%
+  select(Admin2:deaths) %>%
+  mutate(date = mdy(date)) %>%
+  select(-c(Lat, Long_))
+```
+
+We will now join the two different US datasets
+```{r tidy_us_join_data}
+US <- us_cases %>%
+full_join(us_deaths)
+```
+
+We want to combine the state and country_regoin of global dataset
+```{r tidy_global_country_region_data}
+global <- global %>%
+  unite("Combined_Key",
+        c(Province_State, Country_Region),
+        sep = ", ",
+        na.rm = TRUE,
+        remove = FALSE)
+```
+
+Start @ 7:00 of Tidying and Transforming Data
