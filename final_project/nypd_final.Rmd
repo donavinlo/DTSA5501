@@ -1,0 +1,31 @@
+---
+title: "NYPD Data"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Packages Needed
+- Tidyverse
+- Lubridate
+```{r import_packages, message= FALSE}
+library(tidyverse)
+library(lubridate)
+```
+
+
+## Importing the data
+
+First, I'll import the data from <https://catalog.data.gov/dataset>. This data
+represents information about every shooting incident in New York City since
+2006.
+```{r data_import}
+url_nypd <- paste0("https://data.cityofnewyork.us/api/views/833y-fsy8/",
+              "rows.csv?accessType=DOWNLOAD")
+
+nypd_shootings <- read_csv(url_nypd)
+
+```
+

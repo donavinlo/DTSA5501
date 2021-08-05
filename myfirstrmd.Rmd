@@ -34,14 +34,14 @@ summary(cars)
 
 You can also embed plots, for example:
 <!-- Chunk is named 'pressur'. The 'echo = FALSE' means the code won't be displayed when displaying the plot -->
-```{r pressure, echo=FALSE}
+```{r pressure}
 plot(pressure)
 ```
 
 <!-- Put inline code in text by using backticks -->
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-#Things to always do in R Markdown
+# Things to always do in R Markdown
 
 * Use relative and not absolute paths
     + "../filename" goes up one level
@@ -72,6 +72,12 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
     + can try in console, got to history tab and 'put in source' once you get it to work
 * If you can't get it to knit, set eval=FALSE in the problem chunk until you can debug it
     + allows us to work on other things until we deubg it
+    
+# Shorcuts that may help on mac
+- cmd + option + I will insert a new chunk
+- cmd + shift + enter will run that code chunk
+- can exclude the whole chunk by making 'include=' set to FALSE
+- can remove warning messages by making 'messages=' set to FALSE
 
 
 

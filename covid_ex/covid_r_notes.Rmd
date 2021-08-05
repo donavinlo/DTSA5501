@@ -2,15 +2,27 @@
 title: "Covid Data Example"
 author: "D. ODay"
 date: "7/19/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
-Make sur eto import tidyverse
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-# Packages Used
-- tidyverse
+### Packages
+We will only need the following packages when working this example. Please import
+using 'library()'
+* tidyverse
+* lubridate
+```{r _load_packages}
+library(tidyverse)
+library(lubridate)
+```
 
+# Tidying and Loading Data
+It's important we learn the skills to clean and load our data.
+
+## Loading Data
 I will start by reading in the data from the four main csv files.
 
 ```{r get_jhu_data}
@@ -34,7 +46,7 @@ us_deaths <- read_csv(urls[4])
 ```
 After looking at global_cases and global_death, I would like to tidy those 
 datasets and put each variable (date, cases, deaths) in their own column.
-Also, I don't need Lat and Long for the analysis I'm planning, so I will get
+Also, I don't need Lat and Long for the analysis I'm planning; so, I will get
 rid of those and rename Region and State to be more R friendly.
 
 ```{r tidy_global_data}
@@ -45,7 +57,7 @@ global_deaths <- global_deaths %>%
   pivot_longer( cols = - c('Province/State',
                            'Country/Region', Lat, Long),
                 names_to = "date",
-                values_to = "cases") %>%
+                values_to = "deaths") %>%
   select(-c(Lat,Long))
 
 global_cases <- global_cases %>%
@@ -56,7 +68,7 @@ global_cases <- global_cases %>%
   select(-c(Lat,Long))
 ```
 
-# Now We're going to work on transformming and tidying the data
+## Now We're going to work on transforming and tidying the data
 
 We'll start by combining the case and death per date into one variable called 'global';
 we will do this by joining the cases with the deaths and the renaming our 'country region'
@@ -73,22 +85,25 @@ global <- global_cases %>%
 
 Look at the data and see if there's any problems. We think there are a lot of 
 rows with 0. So we also want to filter those out.
+
 ```{r tidy_global_data_summary}
 global <- global %>% filter(cases > 0)
 summary(global)
 ```
 
-Looking at the summary table there are a few concerns. First we want to see if
+Looking at the summary table, there are a few concerns. First we want to see if
 the maximum number of cases should really be that large. We can see the data is
 valid because there are numerous cases with this amount of data.
+
 ```{r tidy_global_filter_maax}
 global %>% filter(cases > 28000000)
 ```
 
 Now we want to take a look at the US cases. When looking at the dataset we can
 see some weird codes/data types. We want to pivot the dates, keep Admin2, Province/State,
-Country/Region and Lat/Long.. Select all the important variables.Make date a date object.
+Country/Region and Lat/Long.. Select all the important variables. Make date a date object.
 Select all the remaining columns except Latitude and Longitude.
+
 ```{r tidy_us_cases_data}
 us_cases <- us_cases %>%
   pivot_longer(cols = -(UID:Combined_Key), #got rif of 
@@ -99,7 +114,7 @@ us_cases <- us_cases %>%
   select(-c(Lat, Long_))
 ```
 
-Now we want to do the same for us_deaths. We can't always assume the two data sets
+We want to do the same for us_deaths. We can't always assume the two data sets
 will be in similar formats. But we are for this situation.
 ```{r tidy_us_deaths_data}
 us_deaths <- us_deaths %>%
@@ -111,13 +126,13 @@ us_deaths <- us_deaths %>%
   select(-c(Lat, Long_))
 ```
 
-We will now join the two different US datasets
+We will join the two different US datasets
 ```{r tidy_us_join_data}
 US <- us_cases %>%
 full_join(us_deaths)
 ```
 
-We want to combine the state and country_regoin of global dataset
+We want to combine the state and country_region of global dataset
 ```{r tidy_global_country_region_data}
 global <- global %>%
   unite("Combined_Key",
@@ -127,4 +142,173 @@ global <- global %>%
         remove = FALSE)
 ```
 
-Start @ 7:00 of Tidying and Transforming Data
+Importing csv to grab population variable
+``` {r tidy_population_csv_load}
+uid_lookup_url <- "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/UID_ISO_FIPS_LookUp_Table.csv"
+
+uid <- read_csv(uid_lookup_url) %>%
+  select(-c(Lat, Long_, Combined_Key, code3, iso2, iso3, Admin2))
+```
+
+Adding uid csv to global dataset to add the population as a column
+```{r tidy_global_add_pop}
+global <- global %>%
+  left_join(uid, by = c("Province_State", "Country_Region")) %>%
+  select(-c(UID, FIPS)) %>%
+  select(Province_State, Country_Region, date, cases, deaths, Population, Combined_Key)
+```
+
+# Visualization
+Visualization is a key aspect to help everyone understand the data.
+
+### First, we will analyze the COVID data for each U.S. state
+Mutate creates a columns calculation based off of arithmetic of other columns
+Make sure to double check the data for population with a source online
+
+``` {r state_us_cases}
+us_by_state <- US %>%
+  group_by(Province_State, Country_Region, date) %>%
+  summarize(cases = sum(cases), deaths = sum(deaths),
+    Population = sum(Population)) %>%
+    mutate(deaths_per_mill = deaths * 1000000 / Population) %>%
+    select(Province_State, Country_Region, date, cases, deaths, deaths_per_mill,
+    Population) %>%
+    ungroup()
+```
+
+### Look at total amount for U.S.
+
+``` {r total_us_data}
+us_totals <- us_by_state %>%
+  group_by(Country_Region, date) %>%
+  summarize(cases = sum(cases), deaths = sum(deaths), Population = sum(Population)) %>%
+  mutate(deaths_per_mill = deaths * 1000000 / Population) %>%
+  select(Country_Region, date, cases, deaths, deaths_per_mill, Population) %>%
+  ungroup()
+```
+
+Want to visualize the US total data
+``` {r visual_us_cases}
+us_totals %>%
+  filter(cases > 0) %>%
+  ggplot(aes(x = date, y = cases)) +
+  geom_line(aes(color = "cases")) +
+  geom_point(aes(color = "cases")) +
+  geom_line(aes(y = deaths, color = "deaths")) +
+  geom_point(aes(y = deaths, color = "deaths")) +
+  scale_y_log10() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90)) +
+  labs(title = "COVID19 in US", y = NULL)
+```
+Now we'll look at cases in New York
+``` {r visual_cases_new_york}
+us_by_state %>%
+  filter(Province_State == "New York") %>%
+  filter(cases > 0) %>%
+  ggplot(aes(x = date, y = cases)) +
+  geom_line(aes(color = "cases")) +
+  geom_point(aes(color = "cases")) +
+  geom_line(aes(y = deaths, color = "deaths")) +
+  geom_point(aes(y = deaths, color = "deaths")) +
+  scale_y_log10() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90)) +
+  labs(title = "COVID19 in New York", y = NULL)
+```
+
+We can look at the date with the maximum number of cases and date. Should be the date worked and cases to the daty working
+``` {r _max_date_us}
+max(us_totals$date)
+max(us_totals$deaths)
+```
+
+# Analyze the data
+
+We are going to add some variables to our data so we can look at the change from day to day
+``` {r add_lage_to_data}
+us_by_state <- us_by_state %>%
+  mutate(new_cases = cases - lag(cases), new_deaths = deaths - lag(deaths))
+us_totals <- us_totals %>%
+  mutate(new_cases = cases - lag(cases),
+         new_deaths = deaths - lag(deaths))
+  
+```
+
+Now we want to visualize the new cases and new deaths in the U.S. At first, the US was looking at the total number of cases.
+Soon, this lost value so we started looking at new cases and new deaths.
+```{r new_cases_data}
+us_totals %>%
+  filter(cases > 0) %>%
+  ggplot(aes(x = date, y = new_cases)) +
+  geom_line(aes(color = "new_cases")) +
+  geom_point(aes(color = "new_cases")) +
+  geom_line(aes(y = new_deaths, color = "new_deaths")) +
+  geom_point(aes(y = new_deaths, color = "new_deaths")) +
+  scale_y_log10() +
+  theme(legend.position = "bottom",
+        axis.text.x = element_text(angle = 90)) +
+  labs(title = "COVID19 in US", y = NULL)
+```
+
+Now we want to know what are the best and/or worst states? We'll see the 10 states 
+with smallest/largest deaths per thousands. Remembe rto always ask questions when 
+looking at the data.
+
+``` {r worst_states_covid_visualize}
+us_state_totals <- us_by_state %>%
+  group_by(Province_State) %>%
+  summarize(deaths = max(deaths), cases = max(cases),
+            population = max(Population),
+            cases_per_thou = 1000* cases / population,
+            deaths_per_thou = 1000 * deaths / population) %>%
+  filter(cases > 0, population > 0)
+
+us_state_totals %>%
+  slice_min(deaths_per_thou, n=10) %>%
+  select(deaths_per_thou, cases_per_thou, everything())
+
+us_state_totals %>%
+  slice_max(deaths_per_thou, n=10) %>%
+  select(deaths_per_thou, cases_per_thou, everything())
+```
+
+# Modeling Data
+We're going to do a very simple model and make predictions
+``` {r linear_model}
+  mod <- lm(deaths_per_thou ~ cases_per_thou, data = us_state_totals)
+summary(mod)
+
+us_tot_w_pred <- us_state_totals %>% mutate(pred = predict(mod))
+us_tot_w_pred
+```
+
+Let's plot these predictions with our real data. Other factors needed to predict
+what causes more deaths. Obviougly, the number of cases aren't a direct correlation.
+This introduces us to the cyclical process. We would now look further into the other
+reasons why this data looks like this
+
+``` {r plot_predictions}
+us_tot_w_pred %>% ggplot() + geom_point(aes(x=cases_per_thou, y=deaths_per_thou),
+                                        color = "blue")+
+  geom_point(aes(x = cases_per_thou, y = pred), color = "red")
+```
+
+# Now we have to look at bias
+* Potenital bias:
+  - Topic Chosen
+    1. You chose the topic so you have different feelings about it
+  - Variables Used
+  - How you phrase questions in a survey
+  - Clothing worn during the survey
+  - How do you handle outliers
+    1. A lot of times the most interesting data is in the outliers
+  - Bias in the machine learning model?
+
+### Why does bias exist?
+- It is not necessarily a bad thing
+- Fear keeps us alive
+- Tend to be afraid of those who are different than us
+- If you're a left-wing political person, would be best to put on right-wing hat
+  when working with data
+  
