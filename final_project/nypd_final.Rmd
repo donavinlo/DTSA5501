@@ -29,3 +29,53 @@ nypd_shootings <- read_csv(url_nypd)
 
 ```
 
+## Tidying Data
+
+Looking at the column details, I can see some columns are not the correct 
+variable types. Therefore, I will make the following changes
+
+- *Occur_Date* is listed as a string/character type
+  - This needs to change to a date column using the **lubridate** package
+- The following variables will need to be changed to a factor type because they
+are categorical
+  - *BORO*
+  - *JURISDICTION_CODE*
+  - *PERP_AGE_GROUP*
+  - *PERP_SEX*
+  - *PERP_RACE*
+  - *VIC_AGE_GROUP*
+  - *VIC_SEX*
+  - *VIC_RACE*
+- I'm also removing a few variableS that I don't feel have as much impact to the 
+analysis. INCIDENT_KEY would be important if we were joinging multiple datasets.
+In this case, we aren't; therefore, I am removing it along with the geographical
+data.
+
+```{r tidy_col_types}
+factor_cols <- c("BORO", "JURISDICTION_CODE", "PERP_AGE_GROUP", "PERP_SEX",
+                 "PERP_RACE", "VIC_AGE_GROUP", "VIC_SEX", "VIC_RACE")
+
+nypd_shootings <- nypd_shootings %>% mutate(OCCUR_DATE = mdy(OCCUR_DATE),
+                                            across(.cols = all_of(factor_cols), 
+                                                   as.factor)) %>%
+  select(-c(INCIDENT_KEY, X_COORD_CD, Y_COORD_CD, Latitude, Longitude, Lon_Lat))
+```
+Viewing the summary, we can see that about of a third of the PERP_AGE_GROUP,
+PERP_SEX, AND PER_RACE are missing. Thus, I will drop all rows that are missing
+data in these columns.If we had access to more data,  I could probably fill the 
+missing data using various methods. Also, JURISDICTION_CODE only has two 
+observations where the data is missing, I will fill them with a random number
+between 0 and 2.
+
+```{r data_summary}
+summary(nypd_shootings)
+
+```
+```{r missing_vals}
+nypd_shootings <- nypd_shootings %>%
+  mutate(JURISDICTION_CODE = replace(JURISDICTION_CODE, is.na(JURISDICTION_CODE)
+                                     , sample(0:2, 1))) %>%
+  drop_na(PERP_AGE_GROUP, PERP_SEX, PERP_RACE)
+
+summary(nypd_shootings)
+```
