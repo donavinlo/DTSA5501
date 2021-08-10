@@ -12,17 +12,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Packages Needed
 - Tidyverse
 - Lubridate
+- DT
 ```{r import_packages, message= FALSE}
 library(tidyverse)
 library(lubridate)
+library(DT)
 ```
 
 
 ## Importing the data
 
-First, I'll import the data from <https://catalog.data.gov/dataset>. This data
-represents information about every shooting incident in New York City since
-2006.
+First, I'll import the data from <https://catalog.data.gov/dataset/nypd-shooting-incident-data-year-to-date> . This data represents information about every shooting incident in New York City since 2006.
+
 ```{r data_import}
 url_nypd <- paste0("https://data.cityofnewyork.us/api/views/833y-fsy8/",
               "rows.csv?accessType=DOWNLOAD")
@@ -149,13 +150,14 @@ ggplot(nypd_shootings, aes(x=BORO)) +
 
 
 ```{r statistical_murder_boro}
+
 nypd_shootings %>% group_by(BORO) %>% summarise(
   total_shootings = n(),
   statistical_murder = sum(STATISTICAL_MURDER_FLAG == TRUE),
   percentage = statistical_murder / total_shootings) %>%
   arrange(desc(percentage)) %>%
   rename("Cases" = total_shootings, "Murder Label" = statistical_murder,
-         "%" = percentage)
+         "%" = percentage) %>% datatable()
 
 ```
 
@@ -519,27 +521,34 @@ free time.
 
 It is possible that there is bias contained within this report. First, we
 only have a few variables to look at. Income disparities, population density, 
-etc. are important variables to consider when looking at this data. Also,
-most of our data was categorical; this makes it difficult to compare
-relationships of New York City. Maybe a higher population density would lead to 
-a higher proportion of shootings being  a murder? More data could help us look 
-at other factors that contribute to the differences between shooting types. 
-Also, the variables in this dataset have high multicollinearity. In other words,
-many of the variables aren't independent of each other; therefore, increasing or
-decreasing one variable in the model may cause another to increase or decrease
-unintentionally. This causes major statistical errors when attempting to make 
-predictions. 
-Third, I wanted to avoid looking into specific variables due to ethical issues. 
+etc. are important variables to consider when looking at this data. 
+Also, most of our data was categorical; this makes it difficult to compare
+relationships of New York City. Maybe a higher population density would lead 
+to a higher proportion of shootings being  a murder? More data could help us 
+look at other factors that contribute to the differences between shooting types.
+
+Third, the variables in this dataset have high multicollinearity. In other 
+words, many of the variables aren't independent of each other; therefore, 
+increasing or decreasing one variable in the model may cause another to increase
+or decrease unintentionally. This causes major statistical errors when 
+attempting to make predictions. 
+
+Fourth, I wanted to avoid looking into specific variables due to ethical issues. 
 Race was a variable I used in the model; however, I didn't want to investigate 
 it much due to different issues an African American my face compared to a 
-Caucasian or vice versa. Investigating racial differences can be tricky when
+Caucasian or vice versa. Investigating racial differences can be tricky when 
 working with data.
-Lastly, I have my own personal biases. I may have made some choices on how to
+
+Lastly, I have my own personal biases. I may have made some choices on how to 
 look at certain parts of the data, subconsciously. For example, I chose to focus
 on whether a shooting was considered a murder. However, I could of focused on 
-the disparities between different boroughs. These decisions could lead to
+the disparities between different boroughs. These decisions could lead to 
 different interpretations of the data.
 
-In conclusion, New York City has a long history of gun violence. For the last 14 
-years they have done a great job of reducing the incidents. Lets focus on
+In conclusion, New York City has a long history of gun violence. For the last 
+14 years they have done a great job of reducing the incidents. Lets focus on 
 reducing the violence more to make New York great for everyone.
+
+```{r session_info()}
+utils::sessionInfo()
+```
