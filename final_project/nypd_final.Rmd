@@ -157,7 +157,7 @@ nypd_shootings %>% group_by(BORO) %>% summarise(
   percentage = statistical_murder / total_shootings) %>%
   arrange(desc(percentage)) %>%
   rename("Cases" = total_shootings, "Murder Label" = statistical_murder,
-         "%" = percentage) %>% datatable()
+         "%" = percentage)
 
 ```
 
