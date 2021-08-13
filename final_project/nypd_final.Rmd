@@ -3,6 +3,12 @@ title: "NYPD Data"
 output: pdf_document
 ---
 
+```{r tinytex_install}
+tinytex::tlmgr_install("pdfcrop")
+```
+Will need to run ''tinytex::tlmgr_install("pdfcrop")'' for the knitting of this
+document if it isn't already installed
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
