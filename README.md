@@ -1,2 +1,2 @@
 # DTSA5501
- 'Data Science as a Field' class notes, projects and written responses
+ 'Data Science as a Field' 
